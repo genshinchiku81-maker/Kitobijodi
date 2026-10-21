@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kitobijodi</title>
+<style>
+:root{--bg:#f7f4ee;--card:#fff;--tx:#23201b;--mu:#7a7468;--ac:#b4451f;--bd:#e4ddcf}
+@media(prefers-color-scheme:dark){:root{--bg:#17150f;--card:#221f17;--tx:#efe9dc;--mu:#a39b8a;--ac:#e07a52;--bd:#373225}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.5 Georgia,"Times New Roman",serif}
+.wrap{max-width:820px;margin:0 auto;padding:12px}
+h1{font-size:21px;margin:4px 0 12px}
+input,button{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px 12px}
+input{width:100%}
+button{background:var(--ac);color:#fff;border:0;cursor:pointer;font-weight:700}
+button.g{background:transparent;color:var(--ac);border:1px solid var(--bd)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:14px;margin-top:14px}
+.b{background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow:hidden;cursor:pointer}
+.cv{aspect-ratio:3/4;background:var(--bd);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--ac)}
+.cv img{width:100%;height:100%;object-fit:cover;display:block}
+.bi{padding:8px 10px}
+.mu{color:var(--mu);font-size:13px}
+.pg{display:block;width:100%;margin:0 auto}
+.txt{white-space:pre-wrap;line-height:1.7}
+.bar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.bar h2{flex:1;font-size:16px;margin:0}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="books.js"></script>
+<script>
+const app = document.getElementById("app");
+const books = (window.BOOKS || []).map(b => {
+  const pages = b.pages || (b.folder && b.count
+    ? Array.from({ length: b.count }, (_, i) => b.folder + "/" + (i + 1) + "." + (b.ext || "jpg"))
+    : []);
+  return Object.assign({}, b, { pages });
+});
+let q = "", fs = 15;
+try { fs = Number(localStorage.getItem("fs")) || 15; } catch (e) {}
+
+function el(t, c, x) { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
+function setFs(n) { fs = Math.max(13, Math.min(30, n)); try { localStorage.setItem("fs", fs); } catch (e) {} route(); }
+
+function home() {
+  app.textContent = "";
+  app.append(el("h1", "", "📚 kitobijodi"));
+  const s = el("input"); s.type = "search"; s.placeholder = "Nom bo‘yicha qidiring"; s.value = q;
+  const g = el("div", "grid");
+  s.oninput = e => { q = e.target.value; fill(g); };
+  app.append(s, g);
+  fill(g);
+}
+
+function fill(g) {
+  g.textContent = "";
+  const k = q.trim().toLowerCase();
+  let n = 0;
+  books.forEach((b, i) => {
+    if (k && !(b.title || "").toLowerCase().includes(k)) return;
+    n++;
+    const c = el("div", "b");
+    const cv = el("div", "cv");
+    if (b.kind === "manga" && b.pages[0]) {
+      const im = document.createElement("img"); im.src = encodeURI(b.pages[0]); im.alt = ""; im.loading = "lazy"; cv.append(im);
+    } else cv.textContent = (b.title || "?").charAt(0).toUpperCase();
+    const bi = el("div", "bi");
+    bi.append(el("b", "", b.title));
+    bi.append(el("div", "mu", (b.author ? b.author + " · " : "") + (b.kind === "manga" ? "manga" : "kitob")));
+    c.append(cv, bi);
+    c.onclick = () => { location.hash = "k" + i; };
+    g.append(c);
+  });
+  if (!n) g.append(el("div", "mu", books.length ? "Hech narsa topilmadi." : "Hozircha kitoblar yo‘q."));
+}
+
+async function read(i) {
+  const b = books[i];
+  if (!b) { location.hash = ""; return; }
+  app.textContent = "";
+  const bar = el("div", "bar");
+  const back = el("button", "g", "← Orqaga"); back.onclick = () => { location.hash = ""; };
+  bar.append(back, el("h2", "", b.title));
+  if (b.kind !== "manga") {
+    const m = el("button", "g", "A−"); m.onclick = () => setFs(fs - 2);
+    const p = el("button", "g", "A+"); p.onclick = () => setFs(fs + 2);
+    bar.append(m, p);
+  }
+  app.append(bar);
+  window.scrollTo(0, 0);
+  if (b.kind === "manga") {
+    b.pages.forEach(u => { const im = document.createElement("img"); im.className = "pg"; im.src = encodeURI(u); im.loading = "lazy"; im.alt = ""; app.append(im); });
+  } else {
+    const t = el("div", "txt", "Yuklanmoqda..."); t.style.fontSize = fs + "px"; app.append(t);
+    try {
+      const r = await fetch(encodeURI(b.file));
+      if (!r.ok) throw new Error();
+      t.textContent = await r.text();
+    } catch (e) { t.textContent = "Matnni yuklab bo‘lmadi."; }
+  }
+}
+
+function route() {
+  const m = location.hash.match(/^#k(\d+)$/);
+  if (m) read(Number(m[1])); else home();
+}
+window.addEventListener("hashchange", route);
+route();
+</script>
+</body>
+</html>
