@@ -10,3 +10,4 @@
 
 window.BOOKS = [
 ];
+{ title: "Istanbul fojiasi", author: "xuzano", kind: "book", file: "istanbul_fojiasi.txt" },
