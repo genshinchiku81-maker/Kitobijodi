@@ -9,5 +9,5 @@
 //   { title: "Kitob nomi", author: "Muallif", kind: "book", file: "kitoblar/nom.txt" },
 
 window.BOOKS = [
-];
 { title: "Istanbul fojiasi", author: "xuzano", kind: "book", file: "istanbul_fojiasi.txt" },
+];
